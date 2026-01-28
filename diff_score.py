@@ -21,12 +21,28 @@ import argparse
 import math
 from pathlib import Path
 
+import matplotlib as mpl
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.patches import Rectangle
 from matplotlib.patches import FancyBboxPatch
 
+
+
+mpl.rcParams.update({
+    "text.usetex": False,          # python-only text rendering
+    "font.family": "monospace",    # request monospace
+    "font.monospace": [
+        "DejaVu Sans Mono",        # ships with matplotlib
+        "Liberation Mono",
+        "Nimbus Mono L",
+        "Courier New",
+        "Courier",
+        "monospace",
+    ],
+    "mathtext.fontset": "dejavusans",  # math in a compatible style
+})
 
 try:
     import soundfile as sf
@@ -153,10 +169,10 @@ def render_pdf(
             systems_h = usable_h - header_h - footer_h
 
             # Header
-            canvas.text(left, top, f"Diffusion Score: {wav_name}", ha="left", va="top", fontsize=12)
+            canvas.text(left, top+0.025, f"Diffusion Score: {wav_name}", ha="left", va="top", fontsize=12)
             canvas.text(
                 right,
-                top,
+                top+0.025,
                 f"Page {page_idx + 1}/{n_pages}",
                 ha="right",
                 va="top",
@@ -193,7 +209,7 @@ def render_pdf(
                     upper_h+lower_h,
                     boxstyle="round,pad=0.01,rounding_size=0.02",
                     fill=False,
-                    linewidth=2,
+                    linewidth=1,
                     edgecolor="black"
                     )
                     )
@@ -210,15 +226,7 @@ def render_pdf(
                 #     )
                 # )
 
-                # Time arrow underneath the lower box (like in sketch)
-                arrow_y = y0 + 0.05
-                canvas.annotate(
-                    "",
-                    xy=(right, arrow_y),
-                    xytext=(left, arrow_y),
-                    arrowprops=dict(arrowstyle="->", lw=1.0, color="black"),
-                )
-                #canvas.text((left + right) / 2, arrow_y - 0.012, "time", ha="center", va="top", fontsize=9)
+
 
                 # Notes area staff lines (optional)
                 if show_staff:
@@ -245,8 +253,9 @@ def render_pdf(
                     t = np.linspace(0, (s1 - s0) / sr, num=wv.shape[0], endpoint=False)
 
                     # Create an axes inside the upper box
-                    ax = fig.add_axes([left, y0 + lower_h, usable_w, upper_h])
+                    ax = fig.add_axes([left, y0 + lower_h +0.02, usable_w, upper_h])
                     ax.plot(t, wv, lw=0.8, color="black")
+                    ax.patch.set_facecolor('none')
                 else:
                     # stereo: plot L and R as two traces
                     if seg.shape[1] == 1:
@@ -261,9 +270,10 @@ def render_pdf(
                     Lp, Rp = stacked[:, 0], stacked[:, 1]
                     t = np.linspace(0, (s1 - s0) / sr, num=stacked.shape[0], endpoint=False)
 
-                    ax = fig.add_axes([left, y0 + lower_h, usable_w, upper_h])
+                    ax = fig.add_axes([left, y0 + lower_h+0.02, usable_w, upper_h])
                     ax.plot(t, Lp, lw=0.7, color="black")
                     ax.plot(t, Rp, lw=0.7, color="gray", alpha=0.75)
+                    ax.patch.set_facecolor('none')
 
                 # Style waveform axes to look like a “staff”
                 ax.set_xlim(0, (s1 - s0) / sr if (s1 - s0) > 0 else 1.0)
@@ -272,6 +282,19 @@ def render_pdf(
                 ax.set_yticks([])
                 for spine in ax.spines.values():
                     spine.set_visible(False)
+
+
+                # Time arrow underneath the lower box (like in sketch)
+                arrow_y = y0 + 0.1
+                canvas.annotate(
+                    "",
+                    xy=(right, arrow_y),
+                    xytext=(left, arrow_y),
+                    arrowprops=dict(arrowstyle="->", lw=1.2, color="black"),
+                )
+                #canvas.text((left + right) / 2, arrow_y - 0.012, "time", ha="center", va="top", fontsize=9)
+
+
 
                 # Timecode labels (absolute time in file)
                 start_t = s0 / sr
@@ -285,20 +308,20 @@ def render_pdf(
 
                 canvas.text(
                     left,
-                    y0 + lower_h + upper_h + 0.004,
+                    y0 + lower_h + upper_h + 0.04,
                     f"{start_m:0{2}d}" ":" f"{start_s:0{2}d}",
                     ha="left",
                     va="bottom",
                     fontsize=8,
                 )
-                canvas.text(
-                    right,
-                    y0 + lower_h + upper_h + 0.004,
-                    f"{end_m:0{2}d}" ":"  f"{end_s:0{2}d}",
-                    ha="right",
-                    va="bottom",
-                    fontsize=8,
-                )
+                # canvas.text(
+                #     right,
+                #     y0 + lower_h + upper_h + 0.04,
+                #     f"{end_m:0{2}d}" ":"  f"{end_s:0{2}d}",
+                #     ha="right",
+                #     va="bottom",
+                #     fontsize=8,
+                # )
 
             # Footer
             canvas.text(
