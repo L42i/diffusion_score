@@ -102,6 +102,15 @@ def draw_staff(ax, x0, y0, w, h, n_lines=5, lw=0.6, alpha=0.8):
         ax.plot([x0, x0 + w], [y, y], color="black", lw=lw, alpha=alpha, solid_capstyle="butt")
 
 
+def plot_compress_tanh(x: np.ndarray, amount: float = 2.5) -> np.ndarray:
+    """
+    x: waveform in [-1, 1]
+    amount: >0. Larger = more compression (2..6 typical).
+    """
+    x = np.asarray(x)
+    return np.tanh(amount * x) / np.tanh(amount)
+
+
 def render_pdf(
     wav_path: str,
     out_pdf: str,
@@ -249,6 +258,7 @@ def render_pdf(
                 # Build waveform trace(s)
                 if waveform_mode == "mono":
                     wv = normalize(to_mono(seg))
+                    wv = plot_compress_tanh(wv, amount=3.0)
                     wv = downsample_for_plot(wv, max_plot_points)
                     t = np.linspace(0, (s1 - s0) / sr, num=wv.shape[0], endpoint=False)
 
@@ -265,6 +275,8 @@ def render_pdf(
                         L = normalize(seg[:, 0])
                         R = normalize(seg[:, 1])
 
+                    L = plot_compress_tanh(normalize(L), amount=3.0)
+                    R = plot_compress_tanh(normalize(R), amount=3.0)
                     stacked = np.column_stack([L, R])
                     stacked = downsample_for_plot(stacked, max_plot_points)
                     Lp, Rp = stacked[:, 0], stacked[:, 1]
